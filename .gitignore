@@ -10,3 +10,4 @@
 *.out
 *.coverprofile
 profile.cov
+out
