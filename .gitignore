@@ -1,2 +1,12 @@
-*exe
+# Compiled binaries and local execution artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries and coverage artifacts
+*.test
 *.out
+*.coverprofile
+profile.cov
