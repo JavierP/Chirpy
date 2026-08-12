@@ -24,25 +24,19 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	const maxChirpLength = 140
-	notAllowedWords := []string{
-		"kerfuffle",
-		"sharbert",
-		"fornax",
-	}
 
 	if len(params.Body) > maxChirpLength {
 		respondWithError(w, http.StatusBadRequest, "Chirp is too long", nil)
 		return
 	}
-	words := strings.Split(params.Body, " ")
-	for k, w := range words {
-		for _, v := range notAllowedWords {
-			if strings.ToLower(w) == v {
-				words[k] = "****"
-			}
-		}
+
+	badWords := []string{
+		"kerfuffle",
+		"sharbert",
+		"fornax",
 	}
-	cleanMessage := strings.Join(words, " ")
+	cleanMessage := getCleanedBody(params.Body, badWords)
+
 	respondWithJSON(w, http.StatusOK, returnVals{
 		CleanedBody: cleanMessage,
 	})
@@ -73,4 +67,17 @@ func respondWithJSON(w http.ResponseWriter, code int, payload any) {
 	}
 	w.WriteHeader(code)
 	w.Write(dat)
+}
+
+func getCleanedBody(body string, badWords []string) string {
+	words := strings.Split(body, " ")
+	for k, w := range words {
+		for _, v := range badWords {
+			if strings.ToLower(w) == v {
+				words[k] = "****"
+			}
+		}
+	}
+	cleanMessage := strings.Join(words, " ")
+	return cleanMessage
 }
