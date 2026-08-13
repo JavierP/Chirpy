@@ -11,3 +11,9 @@
 *.coverprofile
 profile.cov
 out
+
+.env
+env
+
+.Chirpy
+Chirpy/
