@@ -13,29 +13,36 @@ import (
 )
 
 type apiConfig struct {
-	db             *database.Queries
 	fileserverHits atomic.Int32
+	db             *database.Queries
 }
 
 func main() {
+	// Constants
+	const filepathRoot = "."
+	const port = "8080"
+
+	// virtual env and db connection
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
 	dbURL := os.Getenv("DB_URL")
-
-	db, err := sql.Open("postgres", dbURL)
-	if err != nil {
-		log.Fatal(err)
+	if dbURL == "" {
+		log.Fatal("DB_URL must be set")
 	}
 
-	dbQueries := database.New(db)
+	dbConn, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("Error opening database: %s", err)
+	}
 
-	const filepathRoot = "."
-	const port = "8080"
+	dbQueries := database.New(dbConn)
 
+	// starting the config
 	apiCfg := apiConfig{
-		db: dbQueries,
+		fileserverHits: atomic.Int32{},
+		db:             dbQueries,
 	}
 
 	mux := http.NewServeMux()
@@ -43,6 +50,7 @@ func main() {
 
 	mux.HandleFunc("GET /api/healthz", readinessHandler)
 	mux.HandleFunc("POST /api/validate_chirp", validateHandler)
+	mux.HandleFunc("POST /api/users", createHandler)
 
 	mux.HandleFunc("GET /admin/metrics", apiCfg.logHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
@@ -57,4 +65,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func createHandler(w http.ResponseWriter, r *http.Request) {
 }
