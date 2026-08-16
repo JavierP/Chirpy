@@ -5,5 +5,6 @@ gen_random_uuid(), NOW(), NOW(), $1
 )
 RETURNING *;
 
--- name: ResetUsers :one
-DROP users;
+-- name: ResetUsers :exec
+DELETE FROM users;
+

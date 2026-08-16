@@ -18,6 +18,7 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
+	platform       string
 }
 
 type User struct {
@@ -37,6 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	platf := os.Getenv("PLATFORM")
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
 		log.Fatal("DB_URL must be set")
@@ -53,6 +55,7 @@ func main() {
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
+		platform:       platf,
 	}
 
 	mux := http.NewServeMux()
