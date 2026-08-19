@@ -5,14 +5,23 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/JavierP/Chirpy/internal/database"
+	"github.com/google/uuid"
 )
 
-func validateHandler(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body string `json:"body"`
+		User string `json:"user_id"`
 	}
 	type returnVals struct {
-		CleanedBody string `json:"cleaned_body"`
+		ID        uuid.UUID `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"update_at"`
+		Body      string    `json:"body"`
+		UserID    uuid.UUID `json:"user_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -22,7 +31,6 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
 		return
 	}
-
 	const maxChirpLength = 140
 
 	if len(params.Body) > maxChirpLength {
@@ -37,8 +45,23 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	cleanMessage := getCleanedBody(params.Body, badWords)
 
-	respondWithJSON(w, http.StatusOK, returnVals{
-		CleanedBody: cleanMessage,
+	id, err := uuid.Parse(params.User)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't parse user_id", err)
+		return
+	}
+
+	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{Body: cleanMessage, UserID: id})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "couldn't create chirp", err)
+		return
+	}
+	respondWithJSON(w, http.StatusCreated, returnVals{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
 	})
 }
 
