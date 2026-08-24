@@ -11,17 +11,56 @@ import (
 	"github.com/google/uuid"
 )
 
+type returnChirps struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserID    uuid.UUID `json:"user_id"`
+}
+
+func (cfg *apiConfig) getChirpsByIDHandler(w http.ResponseWriter, r *http.Request) {
+	idValue, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		respondWithError(w, http.StatusConflict, "Couldn't parse id", err)
+		return
+	}
+	chirp, err := cfg.db.GetChirpsByID(r.Context(), idValue)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Couldn't get chirp by id", err)
+		return
+	}
+	respondWithJSON(w, http.StatusOK, returnChirps{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
+	})
+}
+
+func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.db.GetAllChirps(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't get chirps", err)
+	}
+	dbChirps := []returnChirps{}
+	for _, chirp := range chirps {
+		dbChirps = append(dbChirps, returnChirps{
+			ID:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserID:    chirp.UserID,
+		})
+	}
+	respondWithJSON(w, http.StatusOK, dbChirps)
+}
+
 func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body string `json:"body"`
 		User string `json:"user_id"`
-	}
-	type returnVals struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"update_at"`
-		Body      string    `json:"body"`
-		UserID    uuid.UUID `json:"user_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -56,7 +95,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		respondWithError(w, http.StatusInternalServerError, "couldn't create chirp", err)
 		return
 	}
-	respondWithJSON(w, http.StatusCreated, returnVals{
+	respondWithJSON(w, http.StatusCreated, returnChirps{
 		ID:        chirp.ID,
 		CreatedAt: chirp.CreatedAt,
 		UpdatedAt: chirp.UpdatedAt,
