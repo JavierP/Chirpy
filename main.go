@@ -80,3 +80,5 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
+// check for auth
