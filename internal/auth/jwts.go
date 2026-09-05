@@ -8,12 +8,33 @@ import (
 )
 
 func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"Issuer":    "chirpy-acces",
-		"IssuedAt":  time.Now(),
-		"ExpiresAt": time.Now() + expiresIn,
-		"Subject":   phrases(userID),
-	})
+	mySingingKey := []byte(tokenSecret)
+	claims := &jwt.RegisteredClaims{
+		Issuer:    "chirpy-access",
+		Subject:   userID.String(),
+		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	ss, err := token.SignedString(mySingingKey)
+	if err != nil {
+		return "", err
+	}
+	return ss, nil
 }
 
-///////// not sure waht is going on
+func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
+	claims := &jwt.RegisteredClaims{}
+
+	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(tokenSecret), nil
+	})
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	userid, err := uuid.Parse(claims.Subject)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	return userid, nil
+}
